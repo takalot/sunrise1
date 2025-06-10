@@ -116,7 +116,7 @@
 
 
 <div id="top-right">
-  <span class="label" id="dateHeb"></span>
+  <span class="label" id="dateHeb"></span><br>
   <span class="label" id="current-date"></span><br>
   <span class="title">פרשת השבוע </span>
   <span class="label" id="parashaName"></span>
@@ -437,10 +437,6 @@ document.addEventListener("DOMContentLoaded", function () {
       const masechet = dafYomi?.displayValue?.he || 'לא נמצא דף';
       document.getElementById('dailyDaf').textContent = masechet;
 
-      // תאריך עברי מתוך "תניא יומי"
-      const hebrewDateItem = data.calendar_items.find(item => item.title?.he.includes('תניא יומי'));
-      const hebrewDate = hebrewDateItem?.displayValue?.he || 'תאריך לא זמין';
-      document.getElementById('dateHeb').textContent = hebrewDate;
 
       // פרשת השבוע
       const parashaItem = data.calendar_items.find(item => item.title?.he === 'פרשת השבוע');
@@ -456,6 +452,30 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   fetchJewishCalendarData();
+  
+        // תאריך עברי
+  async function fetchHebrewDate() {
+    try {
+      const today = new Date();
+      const gy = today.getFullYear();
+      const gm = today.getMonth() + 1;
+      const gd = today.getDate();
+
+      const response = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${gy}&gm=${gm}&gd=${gd}&g2h=1`);
+      const data = await response.json();
+
+      if (data && data.hebrew) {
+        document.getElementById('dateHeb').textContent = data.hebrew; // למשל: י״ג סיון תשפ״ה
+      } else {
+        document.getElementById('dateHeb').textContent = 'תאריך לא זמין';
+      }
+    } catch (error) {
+      console.error('שגיאה בשליפת התאריך העברי:', error);
+      document.getElementById('dateHeb').textContent = 'שגיאה';
+    }
+  }
+
+  fetchHebrewDate();
 </script>
 
 
@@ -464,14 +484,27 @@ document.addEventListener("DOMContentLoaded", function () {
     let mode = 'netz', netzTime, sunsetTime;
     let countdownInterval;
 
-    function updateClock() {
-      const now = new Date();
-      const hh = now.getHours().toString();
-      const mm = now.getMinutes().toString();
-      const ss = now.getSeconds().toString().padStart(2, '0');
-      $('#current-time').html(`${hh}:${mm}<span class="regular-seconds">:${ss}</span>`);
-      $('#current-date').text(`${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`);
-    }
+	//תאריך ויום צרפתית
+function updateClock() {
+  const now = new Date();
+
+  const daysFr = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  const monthsFr = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+
+  const dayNameFr = daysFr[now.getDay()];
+  const monthNameFr = monthsFr[now.getMonth()];
+
+  const hh = now.getHours().toString().padStart(2, '0');
+  const mm = now.getMinutes().toString().padStart(2, '0');
+  const ss = now.getSeconds().toString().padStart(2, '0');
+
+  const dd = now.getDate().toString().padStart(2, '0');
+  const yyyy = now.getFullYear();
+
+  $('#current-time').html(`${hh}:${mm}<span class="regular-seconds">:${ss}</span>`);
+  $('#current-date').text(`${dayNameFr}, ${dd} ${monthNameFr} ${yyyy}`);
+}
+
 
 function startCountdown(target, targetId) {
   clearInterval(countdownInterval);
