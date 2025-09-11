@@ -453,7 +453,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   fetchJewishCalendarData();
   
-        // תאריך עברי
+        // תאריך עבר הזמןי
   async function fetchHebrewDate() {
     try {
       const today = new Date();
@@ -470,7 +470,7 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById('dateHeb').textContent = 'תאריך לא זמין';
       }
     } catch (error) {
-      console.error('שגיאה בשליפת התאריך העברי:', error);
+      console.error('שגיאה בשליפת התאריך העבר הזמןי:', error);
       document.getElementById('dateHeb').textContent = 'שגיאה';
     }
   }
@@ -527,9 +527,9 @@ function startCountdown(target, targetId) {
     // ספירה הגיעה לאפס
     if (diff <= 0) {
       if (targetId === 'netz') {
-        $countdownNetz.text('עבר').css('color', '');
+        $countdownNetz.text('עבר הזמן').css('color', '');
       } else {
-        $countdownSunset.text('עבר').css('color', '');
+        $countdownSunset.text('עבר הזמן').css('color', '');
       }
       clearInterval(countdownInterval);
       setTimeout(() => {
@@ -560,7 +560,7 @@ function startCountdown(target, targetId) {
 
     function fetchZmanim(forTomorrow = false) {
       const date = moment().add(forTomorrow ? 1 : 0, 'days').format('YYYY-MM-DD');
-      $.get(`https://api.sunrisesunset.io/json?lat=31.7946859557658&lng=-325.3427267074585&date=${date}&timezone=Asia/Jerusalem`)
+      $.get(`https://api.sunrisesunset.io/json?lat=31.7946859557658&lng=-325.0027267074585&date=${date}&timezone=Asia/Jerusalem`)
         .done(data => {
           const sunrise = `${date} ${data.results.sunrise}`;
           const sunset = `${date} ${data.results.sunset}`;
