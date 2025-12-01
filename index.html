@@ -297,7 +297,7 @@ Clock.prototype.drawMinuteHand = function() {
 
 <!--שעון חורף 2, שעון קיץ 3-->
 Clock.prototype.drawHourHand = function() {
-    var hours = ((Date.now() + (3 * 60 * 60 * 1000)) / 3600000) % 12;
+    var hours = ((Date.now() + (2 * 60 * 60 * 1000)) / 3600000) % 12;
     var handAngle = (Math.PI * 2) * (-hours / 12);
 
     this.drawHand(handAngle, this.hourHandOptions);
@@ -589,3 +589,4 @@ function startCountdown(target, targetId) {
   </script>
 </body>
 </html>
+
