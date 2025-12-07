@@ -41,7 +41,7 @@
     }
 
     #current-time {
-      font-size: 420px;
+      font-size: 380px;
       direction: ltr;
       display: inline-block;
     }
@@ -144,11 +144,11 @@
 
     <div class="bottom-right">
         <div>
-          <span class="title">זמן עלות השחר </span>
+          <span class="title">עלות השחר</span>
           <span class="zman-time" id="alot-hashahar-time">--:--</span>
         </div>
         <div>
-          <span class="title">זמן נץ החמה </span>
+          <span class="title">נץ החמה</span>
           <span class="zman-time" id="sunrise-time">--:--</span>
         </div>
         <div id="netz-countdown-container">
@@ -542,7 +542,7 @@ clock.update();
            
            
             // --- Étape 2: Affichage permanent des heures (Netz et Shkiah) ---
-            const suffix = isTomorrow ? ' <span class="zman-time-tomorrow">(Demain)</span>' : '';
+            const suffix = isTomorrow ? ' <span class="zman-time-tomorrow">(מחר)</span>' : '';
 
             getElement('alot-hashahar-time').innerHTML = `<span class="zman-time">${alotHashaharTime.format('H:mm')}</span>${suffix}`;
             getElement('sunrise-time').innerHTML = `<span class="zman-time">${netzTime.format('H:mm')}</span>${suffix}`;
@@ -564,7 +564,7 @@ clock.update();
                
             } else {
                 mode = 'netz';
-                getElement('netz-countdown-title').textContent = 'ספירה לנץ (Demain)';
+                getElement('netz-countdown-title').textContent = 'ספירה לנץ';
                 startCountdown(netzTime, 'netz');
             }
 
