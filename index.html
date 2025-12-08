@@ -10,7 +10,6 @@
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/plugin/customParseFormat.js"></script>
  
   <style>
-    /* Styles (conservés et ajustés) */
     body {
       font-family: "David", sans-serif;
       font-weight: bold;
@@ -65,11 +64,9 @@
       margin-top: 10px;
     }
    
-    /* MODIFICATION : Appliquer Tahoma spécifiquement à la date française */
     #current-date {
       font-family: Tahoma, sans-serif;
       font-size: 40px;
-      /* Hérite de la couleur noire de .title, mais on peut la définir explicitement si besoin */
       color: black;
     }
    
@@ -128,14 +125,11 @@
 
     <div id="top-right">
       <span class="label" id="dateHeb"></span><br>
-     
       <span class="title" id="current-date"></span><br>
-     
       <span class="title">פרשת השבוע </span>
       <span class="label" id="parashaName"></span>
       <div id="omer-count" class="label"></div>
     </div>
-
 
     <div class="top-left">
       <span class="title">הדף היומי </span>
@@ -167,7 +161,6 @@
     </div>
   </div>
 
-  <!--Suiss-clock-->
 <script>
 (function(){
 var canvas = document.getElementById('clock');
@@ -305,21 +298,35 @@ Clock.prototype.drawSecondHand = function() {
     this.drawHand(handAngle, this.secondHandOptions);
 };
 
+// MODIFICATION: Aiguille des minutes qui avance en douceur pendant la première seconde
 Clock.prototype.drawMinuteHand = function() {
-    var minutes = Math.floor(((Date.now() + (3 * 60 * 60 * 1000)) / 60000) % 60);
+    var now = Date.now() + (3 * 60 * 60 * 1000);
+    var totalSeconds = (now / 1000) % 3600;
+    var currentSecond = totalSeconds % 60;
+    var baseMinutes = Math.floor(totalSeconds / 60);
+    
+    // L'aiguille commence à bouger quand la trotteuse passe 0 (à 12 heures)
+    // Elle avance progressivement pendant la première seconde uniquement
+    var minuteProgress = 0;
+    if (currentSecond <= 0.5) {
+        minuteProgress = currentSecond; // Avance en douceur sur 1 seconde
+    } else {
+        minuteProgress = 1; // Reste à la position finale
+    }
+    
+    var minutes = baseMinutes + minuteProgress;
     var handAngle = (Math.PI * 2) * (-minutes / 60);
 
     this.drawHand(handAngle, this.minuteHandOptions);
 };
 
-<!--שעון חורף 2, שעון קיץ 3-->
+שעון חורף(2)
 Clock.prototype.drawHourHand = function() {
-    var hours = ((Date.now() + (3 * 60 * 60 * 1000)) / 3600000) % 12;
+    var hours = ((Date.now() + (2 * 60 * 60 * 1000)) / 3600000) % 12;
     var handAngle = (Math.PI * 2) * (-hours / 12);
 
     this.drawHand(handAngle, this.hourHandOptions);
 };
-
 
 Clock.prototype.drawHand = function(angle, handOptions) {
 var startX = (Math.sin(angle) * (this.radius * handOptions.backwardRadiusRatio)) + this.center.x;
@@ -388,17 +395,16 @@ sizeCanvas();
 }
 });
 })();
-clock.update();
 </script>
 
 <script>
-    // Configuration de Day.js
     dayjs.extend(dayjs_plugin_duration);
     dayjs.extend(dayjs_plugin_customParseFormat);
 
     const LAT = 31.7946859557658;
     const LNG = 35.21589133333333;
     const TIMEZONE = 'Asia/Jerusalem';
+    const TWO_HOURS_IN_MS = 2 * 60 * 60 * 1000; // 2 heures en millisecondes
 
     let netzTime = null;
     let sunsetTime = null;
@@ -437,6 +443,7 @@ clock.update();
         return netz.subtract(72, 'minutes');
     }
 
+    // MODIFICATION: Le compte à rebours ne commence que 2 heures avant l'événement
     function startCountdown(targetTime, targetId) {
         if (countdownInterval) {
             clearInterval(countdownInterval);
@@ -449,16 +456,16 @@ clock.update();
         const otherTargetId = targetId === 'netz' ? 'sunset' : 'netz';
         const $otherContainer = getElement(`${otherTargetId}-countdown-container`);
         $otherContainer.style.display = 'none';
-       
-        $countdownContainer.style.display = 'block';
 
         const tick = () => {
             const now = dayjs();
             const diffMs = targetTime.diff(now);
 
+            // Si l'événement est passé
             if (diffMs <= 0) {
                 $countdownElement.textContent = 'עבר הזמן';
                 $countdownElement.style.color = 'red';
+                $countdownContainer.style.display = 'block';
                 clearInterval(countdownInterval);
 
                 setTimeout(() => {
@@ -467,6 +474,15 @@ clock.update();
                 }, 5000);
                 return;
             }
+
+            // Si l'événement est dans plus de 2 heures, on cache le compte à rebours
+            if (diffMs > TWO_HOURS_IN_MS) {
+                $countdownContainer.style.display = 'none';
+                return;
+            }
+
+            // Sinon, on affiche le compte à rebours
+            $countdownContainer.style.display = 'block';
 
             const duration = dayjs.duration(diffMs);
 
@@ -489,7 +505,6 @@ clock.update();
         tick();
         countdownInterval = setInterval(tick, 1000);
     }
-
 
     async function fetchZmanim(forceTomorrow = false) {
         let isTomorrow = forceTomorrow;
@@ -522,7 +537,6 @@ clock.update();
         const targetDate = dayjs().add(isTomorrow ? 1 : 0, 'day').format('YYYY-MM-DD');
         const finalUrl = `https://api.sunrisesunset.io/json?lat=${LAT}&lng=${LNG}&date=${targetDate}&timezone=${TIMEZONE}`;
 
-
         try {
             const response = await fetch(finalUrl);
             if (!response.ok) {
@@ -536,38 +550,32 @@ clock.update();
 
             const { sunrise, sunset } = data.results;
 
-            netzTime = dayjs(`${targetDate} ${sunrise}`, 'YYYY-MM-DD h:mm:ss A');
-            sunsetTime = dayjs(`${targetDate} ${sunset}`, 'YYYY-MM-DD h:mm:ss A');
+            netzTime = dayjs(`${targetDate} ${sunrise}`, 'YYYY-MM-DD H:mm:ss');
+            sunsetTime = dayjs(`${targetDate} ${sunset}`, 'YYYY-MM-DD H:mm:ss');
             alotHashaharTime = calculateAlotHashahar(netzTime);
            
-           
-            // --- Étape 2: Affichage permanent des heures (Netz et Shkiah) ---
             const suffix = isTomorrow ? ' <span class="zman-time-tomorrow">(מחר)</span>' : '';
 
-            getElement('alot-hashahar-time').innerHTML = `<span class="zman-time">${alotHashaharTime.format('H:mm')}</span>${suffix}`;
-            getElement('sunrise-time').innerHTML = `<span class="zman-time">${netzTime.format('H:mm')}</span>${suffix}`;
+            getElement('alot-hashahar-time').innerHTML = `<span class="zman-time">${alotHashaharTime.format('H:mm:ss')}</span>${suffix}`;
+            getElement('sunrise-time').innerHTML = `<span class="zman-time">${netzTime.format('H:mm:ss')}</span>${suffix}`;
 
             if (actualSunsetToday) {
-                 getElement('sunset-time').innerHTML = `<span class="zman-time">${actualSunsetToday.format('H:mm')}</span>`;
+                 getElement('sunset-time').innerHTML = `<span class="zman-time">${actualSunsetToday.format('H:mm:ss')}</span>`;
             } else {
-                 getElement('sunset-time').innerHTML = `<span class="zman-time">${sunsetTime.format('H:mm')}</span>`;
+                 getElement('sunset-time').innerHTML = `<span class="zman-time">${sunsetTime.format('H:mm:ss')}</span>`;
             }
 
-
-            // --- Étape 3: Détermination du Compte à Rebours Actif ---
             const diffSunset = actualSunsetToday ? actualSunsetToday.diff(now) : -1;
            
             if (diffSunset > 0) {
                 mode = 'sunset';
                 getElement('sunset-countdown-title').textContent = 'ספירה לשקיעה';
                 startCountdown(actualSunsetToday, 'sunset');
-               
             } else {
                 mode = 'netz';
                 getElement('netz-countdown-title').textContent = 'ספירה לנץ';
                 startCountdown(netzTime, 'netz');
             }
-
 
         } catch (error) {
             console.error(`Échec de la récupération des Zmanim: ${error.message}`);
@@ -578,7 +586,6 @@ clock.update();
             getElement('sunset-time').textContent = 'שגיאה';
         }
     }
-
 
     async function fetchJewishCalendarData() {
         try {
@@ -621,7 +628,6 @@ clock.update();
         }
     }
 
-    // --- Initialisation ---
     document.addEventListener('DOMContentLoaded', () => {
         updateClock();
         setInterval(updateClock, 1000);
