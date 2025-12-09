@@ -291,6 +291,7 @@ i++;
 }
 };
 
+//שעון חורף(2)
 Clock.prototype.drawSecondHand = function() {
     var milliseconds = ((Date.now() + (3 * 60 * 60 * 1000)) / 1000) % 60;
     var handAngle = Math.max(-Math.PI * 2, (Math.PI * 2) * (-milliseconds / 58.5));
@@ -298,20 +299,17 @@ Clock.prototype.drawSecondHand = function() {
     this.drawHand(handAngle, this.secondHandOptions);
 };
 
-// MODIFICATION: Aiguille des minutes qui avance en douceur pendant la première demi-seconde
 Clock.prototype.drawMinuteHand = function() {
     var now = Date.now() + (3 * 60 * 60 * 1000);
     var totalSeconds = (now / 1000) % 3600;
     var currentSecond = totalSeconds % 60;
     var baseMinutes = Math.floor(totalSeconds / 60);
     
-    // L'aiguille commence à bouger quand la trotteuse passe 0 (à 12 heures)
-    // Elle avance progressivement pendant la première demi-seconde uniquement
     var minuteProgress = 0;
     if (currentSecond <= 0.5) {
-        minuteProgress = currentSecond / 0.5; // Avance en douceur sur 0.5 seconde
+        minuteProgress = currentSecond / 0.5;
     } else {
-        minuteProgress = 1; // Reste à la position finale
+        minuteProgress = 1;
     }
     
     var minutes = baseMinutes + minuteProgress;
@@ -321,7 +319,7 @@ Clock.prototype.drawMinuteHand = function() {
 };
 
 Clock.prototype.drawHourHand = function() {
-    var hours = ((Date.now() + (3 * 60 * 60 * 1000)) / 3600000) % 12;
+    var hours = ((Date.now() + (2 * 60 * 60 * 1000)) / 3600000) % 12;
     var handAngle = (Math.PI * 2) * (-hours / 12);
 
     this.drawHand(handAngle, this.hourHandOptions);
@@ -400,10 +398,11 @@ sizeCanvas();
     dayjs.extend(dayjs_plugin_duration);
     dayjs.extend(dayjs_plugin_customParseFormat);
 
-    const LAT = 47;
-    const LNG = 14;
+//Latitude Longitude
+    const LAT = -23;
+    const LNG = -20;
     const TIMEZONE = 'Asia/Jerusalem';
-    const TWO_HOURS_IN_MS = 2 * 60 * 60 * 1000; // 2 heures en millisecondes
+    const TWO_HOURS_IN_MS = 2 * 60 * 60 * 1000;
 
     let netzTime = null;
     let sunsetTime = null;
@@ -442,7 +441,6 @@ sizeCanvas();
         return netz.subtract(72, 'minutes');
     }
 
-    // MODIFICATION: Le compte à rebours ne commence que 2 heures avant l'événement
     function startCountdown(targetTime, targetId) {
         if (countdownInterval) {
             clearInterval(countdownInterval);
@@ -460,7 +458,6 @@ sizeCanvas();
             const now = dayjs();
             const diffMs = targetTime.diff(now);
 
-            // Si l'événement est passé
             if (diffMs <= 0) {
                 $countdownElement.textContent = 'עבר הזמן';
                 $countdownElement.style.color = 'red';
@@ -474,30 +471,32 @@ sizeCanvas();
                 return;
             }
 
-            // Si l'événement est dans plus de 2 heures, on cache le compte à rebours
-            if (diffMs > TWO_HOURS_IN_MS) {
-                $countdownContainer.style.display = 'none';
-            } else {
-                // Sinon, on affiche le compte à rebours
-                $countdownContainer.style.display = 'block';
+            // Toujours afficher le compte à rebours
+            // Afficher uniquement dans les 2 heures avant
+if (diffMs > TWO_HOURS_IN_MS) {
+    $countdownContainer.style.display = 'none';
+    return;
+}
 
-                const duration = dayjs.duration(diffMs);
+$countdownContainer.style.display = 'block';
 
-                const h = duration.hours().toString();
-                const m = duration.minutes().toString().padStart(2, '0');
-                const s = duration.seconds().toString().padStart(2, '0');
-                const timeStr = `${h}:${m}:${s}`;
 
-                let color = targetId === 'netz' ? 'blue' : 'orange';
-                if (diffMs <= 2 * 60 * 1000) {
-                    color = 'red';
-                } else if (diffMs <= 5 * 60 * 1000) {
-                    color = 'orange';
-                }
+            const duration = dayjs.duration(diffMs);
 
-                $countdownElement.textContent = timeStr;
-                $countdownElement.style.color = color;
+            const h = duration.hours().toString();
+            const m = duration.minutes().toString().padStart(2, '0');
+            const s = duration.seconds().toString().padStart(2, '0');
+            const timeStr = `${h}:${m}:${s}`;
+
+            let color = targetId === 'netz' ? 'blue' : 'orange';
+            if (diffMs <= 2 * 60 * 1000) {
+                color = 'red';
+            } else if (diffMs <= 5 * 60 * 1000) {
+                color = 'orange';
             }
+
+            $countdownElement.textContent = timeStr;
+            $countdownElement.style.color = color;
         };
 
         tick();
@@ -526,7 +525,7 @@ sizeCanvas();
                 }
             }
         } catch (error) {
-             console.warn("Échec de la vérification initiale des Zmanim d'aujourd'hui. Utilisation de la logique horaire par défaut.", error);
+             console.warn("Échec de la vérification initiale des Zmanim d'aujourd'hui.", error);
              if (now.hour() >= 18) {
                  isTomorrow = true;
              }
