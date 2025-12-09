@@ -298,7 +298,7 @@ Clock.prototype.drawSecondHand = function() {
     this.drawHand(handAngle, this.secondHandOptions);
 };
 
-// MODIFICATION: Aiguille des minutes qui avance en douceur pendant la première seconde
+// MODIFICATION: Aiguille des minutes qui avance en douceur pendant la première demi-seconde
 Clock.prototype.drawMinuteHand = function() {
     var now = Date.now() + (3 * 60 * 60 * 1000);
     var totalSeconds = (now / 1000) % 3600;
@@ -306,10 +306,10 @@ Clock.prototype.drawMinuteHand = function() {
     var baseMinutes = Math.floor(totalSeconds / 60);
     
     // L'aiguille commence à bouger quand la trotteuse passe 0 (à 12 heures)
-    // Elle avance progressivement pendant la première seconde uniquement
+    // Elle avance progressivement pendant la première demi-seconde uniquement
     var minuteProgress = 0;
     if (currentSecond <= 0.5) {
-        minuteProgress = currentSecond; // Avance en douceur sur 1 seconde
+        minuteProgress = currentSecond / 0.5; // Avance en douceur sur 0.5 seconde
     } else {
         minuteProgress = 1; // Reste à la position finale
     }
@@ -320,9 +320,8 @@ Clock.prototype.drawMinuteHand = function() {
     this.drawHand(handAngle, this.minuteHandOptions);
 };
 
-שעון חורף(2)
 Clock.prototype.drawHourHand = function() {
-    var hours = ((Date.now() + (2 * 60 * 60 * 1000)) / 3600000) % 12;
+    var hours = ((Date.now() + (3 * 60 * 60 * 1000)) / 3600000) % 12;
     var handAngle = (Math.PI * 2) * (-hours / 12);
 
     this.drawHand(handAngle, this.hourHandOptions);
@@ -401,8 +400,8 @@ sizeCanvas();
     dayjs.extend(dayjs_plugin_duration);
     dayjs.extend(dayjs_plugin_customParseFormat);
 
-    const LAT = 31.7946859557658;
-    const LNG = 35.21589133333333;
+    const LAT = 47;
+    const LNG = 14;
     const TIMEZONE = 'Asia/Jerusalem';
     const TWO_HOURS_IN_MS = 2 * 60 * 60 * 1000; // 2 heures en millisecondes
 
@@ -478,28 +477,27 @@ sizeCanvas();
             // Si l'événement est dans plus de 2 heures, on cache le compte à rebours
             if (diffMs > TWO_HOURS_IN_MS) {
                 $countdownContainer.style.display = 'none';
-                return;
+            } else {
+                // Sinon, on affiche le compte à rebours
+                $countdownContainer.style.display = 'block';
+
+                const duration = dayjs.duration(diffMs);
+
+                const h = duration.hours().toString();
+                const m = duration.minutes().toString().padStart(2, '0');
+                const s = duration.seconds().toString().padStart(2, '0');
+                const timeStr = `${h}:${m}:${s}`;
+
+                let color = targetId === 'netz' ? 'blue' : 'orange';
+                if (diffMs <= 2 * 60 * 1000) {
+                    color = 'red';
+                } else if (diffMs <= 5 * 60 * 1000) {
+                    color = 'orange';
+                }
+
+                $countdownElement.textContent = timeStr;
+                $countdownElement.style.color = color;
             }
-
-            // Sinon, on affiche le compte à rebours
-            $countdownContainer.style.display = 'block';
-
-            const duration = dayjs.duration(diffMs);
-
-            const h = duration.hours().toString();
-            const m = duration.minutes().toString().padStart(2, '0');
-            const s = duration.seconds().toString().padStart(2, '0');
-            const timeStr = `${h}:${m}:${s}`;
-
-            let color = targetId === 'netz' ? 'blue' : 'orange';
-            if (diffMs <= 2 * 60 * 1000) {
-                color = 'red';
-            } else if (diffMs <= 5 * 60 * 1000) {
-                color = 'orange';
-            }
-
-            $countdownElement.textContent = timeStr;
-            $countdownElement.style.color = color;
         };
 
         tick();
@@ -550,19 +548,19 @@ sizeCanvas();
 
             const { sunrise, sunset } = data.results;
 
-            netzTime = dayjs(`${targetDate} ${sunrise}`, 'YYYY-MM-DD H:mm:ss');
-            sunsetTime = dayjs(`${targetDate} ${sunset}`, 'YYYY-MM-DD H:mm:ss');
+            netzTime = dayjs(`${targetDate} ${sunrise}`, 'YYYY-MM-DD h:mm:ss A');
+            sunsetTime = dayjs(`${targetDate} ${sunset}`, 'YYYY-MM-DD h:mm:ss A');
             alotHashaharTime = calculateAlotHashahar(netzTime);
            
             const suffix = isTomorrow ? ' <span class="zman-time-tomorrow">(מחר)</span>' : '';
 
-            getElement('alot-hashahar-time').innerHTML = `<span class="zman-time">${alotHashaharTime.format('H:mm:ss')}</span>${suffix}`;
+            getElement('alot-hashahar-time').innerHTML = `<span class="zman-time">${alotHashaharTime.format('H:mm')}</span>${suffix}`;
             getElement('sunrise-time').innerHTML = `<span class="zman-time">${netzTime.format('H:mm:ss')}</span>${suffix}`;
 
             if (actualSunsetToday) {
-                 getElement('sunset-time').innerHTML = `<span class="zman-time">${actualSunsetToday.format('H:mm:ss')}</span>`;
+                 getElement('sunset-time').innerHTML = `<span class="zman-time">${actualSunsetToday.format('H:mm')}</span>`;
             } else {
-                 getElement('sunset-time').innerHTML = `<span class="zman-time">${sunsetTime.format('H:mm:ss')}</span>`;
+                 getElement('sunset-time').innerHTML = `<span class="zman-time">${sunsetTime.format('H:mm')}</span>`;
             }
 
             const diffSunset = actualSunsetToday ? actualSunsetToday.diff(now) : -1;
