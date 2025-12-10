@@ -111,7 +111,7 @@
     }
    
     #netz-countdown-container, #sunset-countdown-container {
-        display: block;
+        display: none;
     }
   </style>
 </head>
@@ -291,7 +291,6 @@ i++;
 }
 };
 
-//שעון חורף(2)
 Clock.prototype.drawSecondHand = function() {
     var milliseconds = ((Date.now() + (3 * 60 * 60 * 1000)) / 1000) % 60;
     var handAngle = Math.max(-Math.PI * 2, (Math.PI * 2) * (-milliseconds / 58.5));
@@ -398,11 +397,13 @@ sizeCanvas();
     dayjs.extend(dayjs_plugin_duration);
     dayjs.extend(dayjs_plugin_customParseFormat);
 
-//Latitude Longitude
     const LAT = 31.7946859557658;
     const LNG = 35.21589133333333;
     const TIMEZONE = 'Asia/Jerusalem';
     const TWO_HOURS_IN_MS = 2 * 60 * 60 * 1000;
+    
+    // MODE TEST : mettre à true pour toujours afficher le compte à rebours (pour test)
+    const TEST_MODE = false;
 
     let netzTime = null;
     let sunsetTime = null;
@@ -442,23 +443,38 @@ sizeCanvas();
     }
 
     function startCountdown(targetTime, targetId) {
+        console.log('=== START COUNTDOWN ===');
+        console.log('targetId:', targetId);
+        console.log('targetTime:', targetTime.format('YYYY-MM-DD HH:mm:ss'));
+        
         if (countdownInterval) {
             clearInterval(countdownInterval);
         }
-        if (!targetTime) return;
+        if (!targetTime) {
+            console.log('ERROR: No targetTime!');
+            return;
+        }
 
         const $countdownElement = getElement(`countdown-${targetId}`);
         const $countdownContainer = getElement(`${targetId}-countdown-container`);
 
+        // Masquer l'autre conteneur
         const otherTargetId = targetId === 'netz' ? 'sunset' : 'netz';
         const $otherContainer = getElement(`${otherTargetId}-countdown-container`);
         $otherContainer.style.display = 'none';
+
+        let isCurrentlyShowing = false;
+        let currentInterval = null;
 
         const tick = () => {
             const now = dayjs();
             const diffMs = targetTime.diff(now);
 
+            console.log('--- TICK ---', now.format('HH:mm:ss'), '| Reste:', (diffMs / 1000 / 60 / 60).toFixed(2), 'heures');
+
+            // Si le temps est écoulé
             if (diffMs <= 0) {
+                console.log('TIME PASSED!');
                 $countdownElement.textContent = 'עבר הזמן';
                 $countdownElement.style.color = 'red';
                 $countdownContainer.style.display = 'block';
@@ -471,23 +487,50 @@ sizeCanvas();
                 return;
             }
 
-            // Toujours afficher le compte à rebours
-            // Afficher uniquement dans les 2 heures avant
-if (diffMs > TWO_HOURS_IN_MS) {
-    $countdownContainer.style.display = 'none';
-    return;
-}
+            // Vérifier si on est dans les 2 heures avant
+            const isWithinTwoHours = TEST_MODE || diffMs <= TWO_HOURS_IN_MS;
 
-$countdownContainer.style.display = 'block';
+            if (!isWithinTwoHours) {
+                // Hors des 2 heures : masquer
+                if (isCurrentlyShowing) {
+                    console.log('❌ HIDING countdown - outside 2 hours');
+                    $countdownContainer.style.display = 'none';
+                    isCurrentlyShowing = false;
+                }
+                
+                // Ajuster l'intervalle à 3 minutes si nécessaire
+                if (currentInterval !== 'slow') {
+                    console.log('⏰ Passage en mode LENT (toutes les 3 minutes)');
+                    clearInterval(countdownInterval);
+                    countdownInterval = setInterval(tick, 3 * 60 * 1000);
+                    currentInterval = 'slow';
+                }
+                return;
+            }
 
+            // Dans les 2 heures : afficher
+            if (!isCurrentlyShowing) {
+                console.log('✅ SHOWING countdown - within 2 hours!');
+                $countdownContainer.style.display = 'block';
+                isCurrentlyShowing = true;
+            }
+            
+            // Ajuster l'intervalle à 1 seconde si nécessaire
+            if (currentInterval !== 'fast') {
+                console.log('⚡ Passage en mode RAPIDE (toutes les secondes)');
+                clearInterval(countdownInterval);
+                countdownInterval = setInterval(tick, 1000);
+                currentInterval = 'fast';
+            }
 
+            // Calculer et afficher le temps restant
             const duration = dayjs.duration(diffMs);
-
             const h = duration.hours().toString();
             const m = duration.minutes().toString().padStart(2, '0');
             const s = duration.seconds().toString().padStart(2, '0');
             const timeStr = `${h}:${m}:${s}`;
 
+            // Déterminer la couleur selon le temps restant
             let color = targetId === 'netz' ? 'blue' : 'orange';
             if (diffMs <= 2 * 60 * 1000) {
                 color = 'red';
@@ -499,8 +542,8 @@ $countdownContainer.style.display = 'block';
             $countdownElement.style.color = color;
         };
 
+        // Première exécution immédiate
         tick();
-        countdownInterval = setInterval(tick, 1000);
     }
 
     async function fetchZmanim(forceTomorrow = false) {
